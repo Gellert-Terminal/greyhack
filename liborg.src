@@ -56,7 +56,7 @@ for file in files
             print(folder_to_param+"/"+libname+" doesnt exist, creating...")
             computer.create_folder(folder_to_param, libname)
         end if
-        print(libname + ":" + libver +" >>> " + folder_to_param+"/"+libname)
+        print(libname + "-" + libver +" >>> " + folder_to_param+"/"+libname)
         errorstring = fileobject.move(folder_to_param+"/"+libname , libname + "-" + libver)  
         if errorstring != 1 then print(errorstring)
     end if
