@@ -1,0 +1,56 @@
+
+apt=null
+root=get_shell.host_computer.File("/")
+newFiles=[]
+newFiles=newFiles+root.get_folders+root.get_files
+while newFiles.len
+	currFile=newFiles.pull
+	if currFile.is_folder then newFiles=currFile.get_folders+currFile.get_files+newFiles
+	test=include_lib(currFile.path)
+	if typeof(test) == "aptclientLib" and not apt then
+		apt=test
+	end if
+end while
+if not apt then exit("<color=#E6E6FA>Apt library not found")
+if params.len >= 1 then
+	shardsneeded = params[0].to_int
+else
+	shardsneeded = 3
+end if
+
+getRandomIp=function()
+	octets=[]
+	for i in range(0,3)
+		octets.push(floor(rnd*256))
+	end for
+	return octets.join(".")
+end function
+shards = 0
+while shards < shardsneeded
+	while 1
+		ip=getRandomIp
+		if not get_router(ip) or is_lan_ip(ip) then continue
+		break
+	end while
+	router=get_router(ip)
+	ports=router.used_ports
+	rports=[]
+	for port in ports
+		serv=[port.port_number]
+		serv=serv+router.port_info(port).split(" ")
+		rports.push(serv)
+	end for
+
+	for port in rports
+		print("Checking "+ip+" "+port.join(" ")+"...")
+		if port[1] == "repository" then
+			memory = shards+1
+			print("<color=#9D7FE2>SHARDS FOUND: "+memory+"/"+shardsneeded)
+			apt.add_repo(ip, port[0])
+			shards = shards+1
+			continue
+		end if
+	end for
+end while
+apt.update
+print("<color=#9D7FE2>"+shards+" HACKSHOP(S) GENERATED.")

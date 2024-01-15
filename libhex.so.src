@@ -1,0 +1,24 @@
+getRandomHex=function()
+    Hexes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"]
+    Hexes.shuffle
+    return Hexes[floor((rnd * Hexes.len))]
+end function
+getHexString=function(spacing, hexlen)
+    spacing = spacing-1
+    hexlist = []
+    for i in range(spacing)
+        l = ""
+        i = 0
+        while i != hexlen
+            //print(i)
+            i = i+1
+            l=l+getRandomHex()
+        end while
+        hexlist.push(l)
+    end for
+    return(hexlist.join(" "))
+end function
+//print(getHexString(params[0].to_int,params[1].to_int))
+//print(getHexString(5,3)
+//returns HEX HEX HEX HEX HEX
+//param0 = amount of hexes, param1 = length of hexes

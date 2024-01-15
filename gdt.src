@@ -1,0 +1,46 @@
+import_code("root/brute1.src")
+import_code("root/brute2.src")
+import_code("root/brute3.src")
+import_code("root/brute4.src")
+import_code("root/brute5.src")
+import_code("root/brute6.src")
+import_code("root/brute7.src")
+l=brute1+brute2+brute3+brute4+brute5+brute6+brute7
+found = false
+if params.len >= 1 then
+	hashstring = params[0]
+	if hashstring.indexOf(":") != null then 
+		residual = hashstring.split(":")[0]
+		hashstring = hashstring.split(":")[1]
+	else 
+		residual = null
+	end if
+	if hashstring.len != 32 then
+		exit("<color=red>string isnt 32 characters long")
+	end if
+
+	for item in l
+		if md5(item) == hashstring then
+			if residual != null then
+				print"<color=purple>KEY FOUND: "+residual+":"+item
+			else
+				print"<color=purple>KEY FOUND: "+item
+			end if
+			found = true
+			break
+		end if
+	end for
+else
+	for item in l
+		tryshell = get_shell("root", item)
+		if typeof(tryshell) == "shell" then
+			print"<color=purple>KEY FOUND: "+item
+			found = true
+			break
+		end if
+	end for
+end if
+
+if found == false then
+	print("<color=red>no key found :(")
+end if

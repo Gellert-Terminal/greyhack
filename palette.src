@@ -1,0 +1,16 @@
+import_code("/root/libhex.so")
+if params.len > 0 then
+    if typeof(params[0].to_int) == "number" then
+		timer = params[0].to_int
+    else
+		timer = 5
+	end if
+else
+    timer = 5
+end if
+
+while true
+    color = getHexString(1, 6)
+    print(color+" - <#"+color+">Hello, world! <sprite=0 color=#"+color+">   <sprite=1 color=#"+color+">   <sprite=2 color=#"+color+">   ")
+	wait(timer)
+end while

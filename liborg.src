@@ -1,74 +1,116 @@
-// YOU HAVE A FOLDER WITH LIBRARIES. YOU WANT TO MOVE THEM TO ANOTHER FOLDER, AND NAME THEM TOO. ALSO SECURE AT THE END
-// OUTPUT: /root/libs/libtype/libname-version
+mxf=null
+mode = "move"
+//print("<color=#C70039>Loading metaxploit.so...</color>")
+root=get_shell.host_computer.File("/")
+newFiles=[]
+newFiles=newFiles+root.get_folders+root.get_files
+while newFiles.len
+	currFile=newFiles.pull
+	if currFile.is_folder then newFiles=currFile.get_folders+currFile.get_files+newFiles
+	test=include_lib(currFile.path)
+	if typeof(test) == "MetaxploitLib" and not mxf then
+		mxf=test
+//		print("<color=#C70039>Hit Exploit library : "+currFile.path)
+	end if
+end while
+if not mxf then exit("<color=#C70039>metaxploit.so not found</color>")
 computer = get_shell.host_computer
-if active_user != "root" then exit("liborg:  permissions are required")
-if params.len < 1 then exit("liborg usage: [source_folder] (destination_folder) (metaxploit_folder)")
-if params.len == 3 then
-    metaxploit_path = params[2]
-    metaxploit = include_lib(metaxploit_path + "/metaxploit.so")
-    if not metaxploit then exit("liborg error: can't find metaxploit at "+metaxploit_path)
-    folder_to_param = params[1]
-else if params.len == 2 then 
-    metaxploit_path = ("/lib/metaxploit.so")
-    metaxploit = include_lib("/lib/metaxploit.so")
-    if not metaxploit then exit("liborg error: can't find metaxploit at /lib/metaxploit.so")
-    folder_to_param = params[1]
-else if params.len == 1 then 
-    print("liborg: using /root/libs as destination.")
-    metaxploit = include_lib("/lib/metaxploit.so")
-    if not metaxploit then exit("liborg error: can't find metaxploit at /lib/metaxploit.so")
-    folder_to_param = "/root/libs"
-end if
-folder_from_param = params[0]
 
-folder_from = computer.File(folder_from_param)
-if folder_from == null then 
-    exit("liborg error: source folder not found")
-end if
-if folder_from.is_folder() != true then 
-    exit("liborg error: source folder is not a folder")
-end if
+//source = source folder
+//mode = "c" or "copy" for copying, "m" else is for moving libraries
+	//	add "-" to not make subfolders for libraries
+	// it checks for indexOf, so technially anything that doesnt have "c" or "copy" in it will do the "move" mode
+//destination = destination folder
+//affectall = move EVERY library or not
+//affectedlist = file.name of the library you want to move
+//recursive = move libraries from subfolders or not
+liborg = function(source="", mode="c", destination ="/root/libs", affectall=true, affectedlist=[], recursive=false)
+	if affectedlist.len == 0 and affectall == false then return null//print("<color=#C70039>no libraries affected, skipping...")
+	if source == "" then exit("error: no source passed")
+	source_obj = computer.File(source)
+	if source_obj == null then 
+		exit("error: source folder "+source+" not found")
+	end if
+//making source folder is unnecessary cause you copy files from it
+	if source_obj.is_folder() != true then 
+		exit("error: source folder "+source+" is not a folder")
+	end if
+//	if mode.lower == "c" or mode.lower == "copy" then
+//		print("<color=#C70039>MODE: copy")
+//	else
+//		print("<color=#C70039>MODE: move")
+//	end if
 
-folder_to = computer.File(folder_to_param)
-if folder_to == null then 
-    print("liborg: " +folder_to_param+" doesnt exist, creating...")
-    folder_path_list = folder_to_param.split("/")
-    folder_name = folder_path_list.pop
-    folder_path = folder_path_list.join("/")
-    computer.create_folder(folder_path, folder_name)
-    folder_to = computer.File(folder_to_param)
-end if
-if folder_to.is_folder() != true then exit("liborg error: destination folder is not a folder")
-
-files = folder_from.get_files()
-libtypes = []
-for file in files
-    filepath = file.path
-    library = metaxploit.load(filepath)
-    if typeof(library) == "MetaLib" then
-        //parsing :(
-        libname = library.lib_name.split("\.so").pull()
-        libver = library.version
-        if libname.indexOf("lib") != null then libname = libname.split("lib").pop()
-        if libtypes.indexOf(libname) == null then libtypes.push(libname)
-        fileobject = computer.File(filepath)
-        if computer.File(folder_to_param+"/"+libname) == null then
-            print(folder_to_param+"/"+libname+" doesnt exist, creating...")
-            computer.create_folder(folder_to_param, libname)
-        end if
-        print(libname + "-" + libver +" >>> " + folder_to_param+"/"+libname)
-        errorstring = fileobject.move(folder_to_param+"/"+libname , libname + "-" + libver)  
-        if errorstring != 1 then print(errorstring)
-    end if
-end for
-folder_to.chmod("o-rwx", 1)
-folder_to.chmod("u-rwx", 1)
-folder_to.chmod("g-rwx", 1)
-folder_to.set_owner("root", 1)
-folder_to.set_group("root", 1)
-folder_from.chmod("o-rwx", 1)
-folder_from.chmod("u-rwx", 1)
-folder_from.chmod("g-rwx", 1)
-folder_from.set_owner("root", 1)
-folder_from.set_group("root", 1)
-print("liborg: folders secured")
+	destination_obj = computer.File(destination)
+	if destination_obj == null then
+		if destination.indexOf("/") == null then
+//			print(current_path+"/"+destination+" doesnt exist, creating....")
+			computer.create_folder(current_path, destination)
+		else
+			parentpath = parent_path(destination)
+			foldername = destination.split("/").pop()
+//			print(parentpath+foldername+" doesnt exist, creating....")
+			computer.create_folder(parentpath, foldername)
+		end if
+		destination_obj = computer.File(destination)
+	end if
+	if destination_obj.is_folder() != true then exit("<color=#C70039>error: destination folder is not a folder")
+	if recursive == false then
+		files = source_obj.get_files()
+	else
+		source_obj
+		files=[]
+		newFiles=[]
+		newFiles=newFiles+source_obj.get_folders+source_obj.get_files
+		while newFiles.len
+			currFile=newFiles.pull
+			if currFile.is_folder then newFiles=currFile.get_folders+currFile.get_files+newFiles
+			if currFile.is_folder == false then files.push(currFile)
+		end while
+	end if
+	for file in files
+		filename = file.name
+		if affectedlist.indexOf(filename) != null or affectall == true then
+			filepath = file.path
+			library = mxf.load(filepath)
+			if typeof(library) == "MetaLib" then
+				//parsing :(
+				libname = library.lib_name.replace(".so","").replace("lib","")
+				libver = library.version
+				fileobject = computer.File(filepath)
+				if mode.lower.indexOf("-")==null then
+					if computer.File(destination+"/"+libname) == null then
+	//					print("<color=#C70039>"+destination+"/"+libname+" doesnt exist, creating...")
+						computer.create_folder(destination, libname)
+					end if
+				end if
+//				print("<color=#C70039>"+libname + "-" + libver +" >>> " + destination+"/"+libname)
+				if mode.lower.indexOf("c")!=null or mode.lower.indexOf("copy")!=null then
+					if mode.lower.indexOf("-")==null then
+						errorstring = fileobject.copy(destination+"/"+libname , libname + "-" + libver)
+					else
+						errorstring = fileobject.copy(destination, libname + "-" + libver)
+					end if
+				else
+					if mode.lower.indexOf("-")==null then
+						errorstring = fileobject.move(destination+"/"+libname , libname + "-" + libver)
+					else
+						errorstring = fileobject.move(destination , libname + "-" + libver)
+					end if
+				end if
+				if errorstring != 1 then print("<color=#C70039>"+errorstring)
+			end if
+		end if
+	end for
+	destination_obj.chmod("o-rwx", 1)
+	destination_obj.chmod("u-rwx", 1)
+	destination_obj.chmod("g-rwx", 1)
+	destination_obj.set_owner("root", 1)
+	destination_obj.set_group("root", 1)
+	source_obj.chmod("o-rwx", 1)
+	source_obj.chmod("u-rwx", 1)
+	source_obj.chmod("g-rwx", 1)
+	source_obj.set_owner("root", 1)
+	source_obj.set_group("root", 1)
+//	print("<color=#C70039>folders secured")
+end function

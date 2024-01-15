@@ -1,0 +1,43 @@
+if params.len > 0 then
+	path = params[0]
+else
+	path = "/"
+end if
+root=get_shell.host_computer.File(path)
+if root == null then exit("<color=#DE3163>"+path+"<color=#C70039> doesnt exist.")
+if root.is_folder == false then 
+	if root.get_content == null then 
+		exit("<color=#DE3163>"+path+"<color=#C70039> is a binary file.")
+	else
+		exit("<color=#DE3163>"+path+"<color=#C70039> is a text file.")
+	end if
+end if
+newFiles=[]
+newFiles=newFiles+root.get_folders+root.get_files
+foldercount = 0
+filecount = 0
+binarycount = 0
+catcount = 0
+inpath = 0
+while newFiles.len
+	currFile=newFiles.pull
+	if currFile.is_folder then 
+		newFiles=currFile.get_folders+currFile.get_files+newFiles
+		foldercount = foldercount + 1
+	else
+		filecount = filecount+1
+		if get_shell.host_computer.File(currFile.path).get_content == null then
+			binarycount = binarycount+1
+			if currFile.path.split("/")[1] == "bin" and currFile.path.split("/")[2] == currFile.name then inpath = inpath+1
+		else
+			catcount = catcount+1
+		end if
+	end if
+end while
+totalfiles = filecount+foldercount
+print("<color=#C70039>You have <color=#DE3163>"+totalfiles+"<color=#C70039> total files in <color=#DE3163>"+root.path+"<color=#C70039>.")
+print("<color=#C70039>\_<color=#DE3163> "+foldercount+" <color=#C70039>folders.")
+print("<color=#C70039>\_<color=#DE3163> "+filecount+" <color=#C70039>files.")
+print("    <color=#C70039>\_<color=#DE3163> "+binarycount+" <color=#C70039>binaries.")
+print("        <color=#C70039>\_<color=#DE3163> "+inpath+" <color=#C70039>in path.")
+print("    <color=#C70039>\_<color=#DE3163> "+catcount+" <color=#C70039>text files.")

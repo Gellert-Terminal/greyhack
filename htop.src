@@ -1,0 +1,68 @@
+comp = get_shell.host_computer
+monitor=function()
+	bar = function(n, bar_length = 35)
+		fill_count = ceil(n / bar_length * 10)
+		empty_count = bar_length - fill_count
+	
+		fill_bar = "#"*fill_count
+		empty_bar = "-"*empty_count
+	
+		bar = "<color=#21bcff>"+fill_bar+"</color><color=#032e41>"+empty_bar+"</color>"
+		return bar
+	end function
+	wait(1)
+	while true
+		ps_out = comp.show_procs
+		tasks = 0
+		cpu_load = 0.0
+		mem_load = 0.0
+		users = []
+
+		// convert ps output to a map
+		counter = 0
+		for l in ps_out.split("\n")[1:]
+			l = l.split(" ")
+		
+			cpu_load = cpu_load + l[2][:-1].val
+			mem_load = mem_load + l[3][:-1].val
+		
+			if l[0] == "root" then
+				u = "<color=#ff4b4b>"+l[0]+"</color>"
+			else
+				u = "<color=#CCCCFF>"+l[0]+"</color>"
+			end if
+
+			n = "<color=#20ff98>"+l[1]+"</color>"
+			c = "<color=#21bcff>"+l[2]+"</color>"
+			m = "<color=#21bcff>"+l[3]+"</color>"
+			p = "<color=#baff50>"+l[4]+"</color>"
+
+			mp={}
+			mp.u=u
+			mp.t=[]
+			mp.t.push({"u" : u, "n": n, "c": c, "m": m, "p": p})
+			users.push(mp)
+
+		
+			tasks=tasks+1
+		end for
+
+
+		pps = []
+		ps = ps_out.split("\n")
+
+
+		for m in users
+
+			for t in m.t
+				l=[t.u, t.n, t.c, t.m, t.p]
+				pps.push(l.join(" "))
+			end for
+		end for
+		print("<color=#fbfbfb>tasks: "+tasks+"</color>"+char(10)+"<color=#fbfbfb>cpu_usage: [</color>"+bar(cpu_load)+"<color=#fbfbfb>]==[ </color><color=#21bcff>"+cpu_load+"%</color> <color=#fbfbfb>]</color>"+char(10)+"<color=#fbfbfb>mem_usage: [</color>"+bar(mem_load)+"<color=#fbfbfb>]==[ </color><color=#21bcff>"+mem_load+"%</color> <color=#fbfbfb>]</color>"+char(10)+"<color=#9d9d9d>USER  PID   CPU   MEM    COLOR </color>"+char(10)+format_columns(pps.join("\n")), 1)
+		wait(1)
+	end while
+	return out
+end function
+
+monitor()
