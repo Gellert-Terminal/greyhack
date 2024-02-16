@@ -7,29 +7,92 @@ import_code("root/brute6.src")
 import_code("root/brute7.src")
 l=brute1+brute2+brute3+brute4+brute5+brute6+brute7
 found = false
+types = ["ssh", "mail", "help"]
 if params.len >= 1 then
-	hashstring = params[0]
-	if hashstring.indexOf(":") != null then 
-		residual = hashstring.split(":")[0]
-		hashstring = hashstring.split(":")[1]
-	else 
-		residual = null
-	end if
-	if hashstring.len != 32 then
-		exit("<color=red>string isnt 32 characters long")
-	end if
-
-	for item in l
-		if md5(item) == hashstring then
-			if residual != null then
-				print"<color=purple>KEY FOUND: "+residual+":"+item
+	if types.indexOf(params[0]) != null then
+		if params[0] == "ssh" then
+			if params.len == 1 then exit("<color=red>NO IP GIVEN.")
+			ip = params[1]
+			if params.len > 2 then
+				user = params[2]
 			else
-				print"<color=purple>KEY FOUND: "+item
+				user = "root"
 			end if
-			found = true
-			break
+			if params.len > 3 then
+				port = params[3].to_int
+				if typeof(port) != "number" then exit("<color=red>INVALID PORT NUMBER.")
+			else
+				port = 22
+			end if
+			for item in l
+				tryshell = get_shell.connect_service(ip, port, user, item)
+				if typeof(tryshell) == "shell" then
+					print"<color=purple>KEY FOUND: "+user+":"+item
+					found = true
+					break
+				end if
+			end for
 		end if
-	end for
+		if params[0] == "mail" then
+			if params.len == 1 then exit("<color=red>NO EMAIL GIVEN.")
+			mail = params[1]
+			for item in l
+				print(typeof(mail_login()))
+				tryMail = mail_login(mail, item)
+				print(typeof(tryMail))
+				if typeof(tryMail) == "MetaMail" then
+					print"<color=purple>KEY FOUND: "+mail+":"+item
+					found = true
+					break
+				end if
+			end for
+		end if
+		if params[0] == "help" then
+			helpList = ["gdt (user=root/MD5 HASH) - runs local attack", "gdt help - runs this command", "gdt ssh [ip], (user=root), (port=22) - runs remote ssh attack", "gdt mail [mail] - runs mail attack"]
+			for helpStr in helpList
+				print("<#CF9FFF>"+helpStr)
+			end for
+			exit()
+		end if
+	else
+		hashstring = params[0]
+		if hashstring.indexOf(":") != null then 
+			residual = hashstring.split(":")[0]
+			hashstring = hashstring.split(":")[1]
+		else
+			if hashstring.len <= 15 then
+				for item in l
+					tryshell = get_shell(hashstring, item)
+					if typeof(tryshell) == "shell" then
+						print"<color=purple>KEY FOUND: "+item
+						found = true
+						break
+					end if
+				end for
+				if found == false then
+					print("<color=red>no key found :(")
+				end if
+				exit()
+			else
+				residual = null
+			end if
+		end if
+		if hashstring.len != 32 then
+			exit("<color=red>string isnt 32 characters long")
+		end if
+
+		for item in l
+			if md5(item) == hashstring then
+				if residual != null then
+					print"<color=purple>KEY FOUND: "+residual+":"+item
+				else
+					print"<color=purple>KEY FOUND: "+item
+				end if
+				found = true
+				break
+			end if
+		end for
+	end if
 else
 	for item in l
 		tryshell = get_shell("root", item)
