@@ -7,26 +7,36 @@ import_code("root/brute6.src")
 import_code("root/brute7.src")
 l=brute1+brute2+brute3+brute4+brute5+brute6+brute7
 found = false
-types = ["ssh", "mail", "help"]
+types = ["remote", "mail", "help", "wifi"]
+rtypes = ["ssh", "ftp", "shell"]
 if params.len >= 1 then
+	params[0] = params[0].lower // CAPs SuPPorT
 	if types.indexOf(params[0]) != null then
-		if params[0] == "ssh" then
-			if params.len == 1 then exit("<color=red>NO IP GIVEN.")
-			ip = params[1]
-			if params.len > 2 then
+		if params[0] == "remote" then
+			if params.len < 2 then exit("<color=red>SERVICE NOT PASSED. TYPE HELP FOR SUPPORTED SERVICES.")
+			params[1] = params[1].lower // CAPs SuPPorT
+			if rtypes.indexOf(params[1]) == null then exit("<color=red>INVALID SERVICE. TYPE HELP FOR SUPPORTED SERVICES")
+			service = params[1]
+			if params.len < 3 then exit("<color=red>IP NOT PASSED.")
+			ip = params[2]
+			if params.len > 3 then
 				user = params[2]
 			else
 				user = "root"
 			end if
-			if params.len > 3 then
+			if params.len > 4 then
 				port = params[3].to_int
 				if typeof(port) != "number" then exit("<color=red>INVALID PORT NUMBER.")
 			else
-				port = 22
+				if service == "ftp" then 
+					port = 21
+				else
+					port = 22
+				end if
 			end if
 			for item in l
-				tryshell = get_shell.connect_service(ip, port, user, item)
-				if typeof(tryshell) == "shell" then
+				tryshell = get_shell.connect_service(ip, port, user, item, service)
+				if typeof(tryshell) == "shell" or typeof(tryshell) == "ftpshell" then
 					print"<color=purple>KEY FOUND: "+user+":"+item
 					found = true
 					break
@@ -37,9 +47,7 @@ if params.len >= 1 then
 			if params.len == 1 then exit("<color=red>NO EMAIL GIVEN.")
 			mail = params[1]
 			for item in l
-				print(typeof(mail_login()))
 				tryMail = mail_login(mail, item)
-				print(typeof(tryMail))
 				if typeof(tryMail) == "MetaMail" then
 					print"<color=purple>KEY FOUND: "+mail+":"+item
 					found = true
@@ -47,8 +55,66 @@ if params.len >= 1 then
 				end if
 			end for
 		end if
+		if params[0] == "wifi" then
+			comp = get_shell.host_computer
+			deviceList = []
+			devices = comp.network_devices
+			if devices == null then exit("no network device found")
+			devices = devices.trim.split(char(10))
+			for device in devices
+				deviceList.push(device.split(" ")[0])
+			end for
+			found = 0
+			for device in deviceList
+				if device.matches("wlan.") != {} then
+					netcard = device.matches("wlan.").values[0]
+					found = 1
+					break
+				end if
+			end for
+			if found == 0 then exit("WIFI card not found")
+			netdump = comp.wifi_networks(netcard)
+			networks = {}
+			for network in netdump
+				network = network.split(" ")
+				remove(network, 1)
+				networks[network[1]] = network[0]
+			end for
+			if params.len < 2 then 
+				print("<color=purple>AVAILABLE NETWORKS:")
+				counter = 0
+				netList = []
+				for network in networks.indexes
+					print("<color=lightblue>"+counter+"] <color=purple>"+network+"<color=white>:<#CF9FFF>"+networks[network])
+					netList.push(network)
+					counter = counter+1
+				end for
+				await = false
+				while not await
+					choice = user_input("SELECT NETWORK TO ATTACK: ").to_int
+					if typeof(choice) != "number" then 
+						print("number expected, got string :(")
+						continue
+					end if
+					if range(0, netList.len-1).indexOf(choice) == null then
+						print("number not in range :(")
+						continue
+					end if
+					network = netList[choice]
+					await = true
+				end while
+				for item in l
+					trywifi = comp.connect_wifi(netcard, networks[network], network, item)
+					if typeof(trywifi) != "string" then
+						print"<color=purple>KEY FOUND: "+item
+						found = true
+						break
+					end if
+				end for
+			end if
+		end if
 		if params[0] == "help" then
-			helpList = ["gdt (user=root/MD5 HASH) - runs local attack", "gdt help - runs this command", "gdt ssh [ip], (user=root), (port=22) - runs remote ssh attack", "gdt mail [mail] - runs mail attack"]
+			helpList = ["HOW FAST THINGS ARE:","Local/MD5 > Mail > Wifi > Remote","gdt (user=root/MD5 HASH) - runs local attack", "gdt help - runs this command", "gdt remote [type=ssh] [ip], (user=root), (port=22) - runs remote attack. SUPPORTED TYPES: ssh, ftp, shell", "gdt mail [mail] - runs mail attack", "gdt wifi - opens wifi attack menu"]
 			for helpStr in helpList
 				print("<#CF9FFF>"+helpStr)
 			end for
@@ -80,7 +146,6 @@ if params.len >= 1 then
 		if hashstring.len != 32 then
 			exit("<color=red>string isnt 32 characters long")
 		end if
-
 		for item in l
 			if md5(item) == hashstring then
 				if residual != null then
